@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue'
-let inputVal = ref('https://i0.wp.com/www.printmag.com/wp-content/uploads/2021/02/4cbe8d_f1ed2800a49649848102c68fc5a66e53mv2.gif?fit=476%2C280&ssl=1');
-
+let inputVal = ref('http://cloudstorage.ihubin.com/blog/audio-video/blog-17/rainbow.gif');
+//https://segmentfault.com/a/1190000022866045
 watch(inputVal, async (newVal, oldVal) => {
   fetch(newVal)
     .then(res => res.arrayBuffer())
@@ -14,17 +14,16 @@ watch(inputVal, async (newVal, oldVal) => {
       while (idx < 6) {
         header += String.fromCharCode(dataView.getUint8(idx++));
       }
-
       // 逻辑屏幕 7byte
       let lsd = {};
-      lsd.canvasWidth = dataView.getUint16(idx);
+      lsd.canvasWidth = dataView.getUint16(idx, true);
       idx += 2;
-      lsd.canvasHeight = dataView.getUint16(idx);
+      lsd.canvasHeight = dataView.getUint16(idx, true);
       idx += 2;
       lsd.packageField = dataView.getUint8(idx++);
       // 感觉比较笨的方法 byte -> 8bit
       let tmp = '';
-      for (let i = 8; i > 0; i--) {
+      for (let i = 7; i >= 0; i--) {
         tmp += (lsd.packageField & 1 << i) >> i;
       }
       lsd.packageField = {
@@ -37,11 +36,19 @@ watch(inputVal, async (newVal, oldVal) => {
       lsd.pxAspectRadio = dataView.getUint8(idx++);
       if (lsd.packageField.globalColorTableFlag) {
         // TODO 加载全局色表
-        idx += lsd.packageField.globalColorTableSize;
+        let tableByte = (2 << lsd.packageField.globalColorTableSize) * 3;
+        let tableArr = [];
+        while (tableByte) {
+          let r = dataView.getUint8(idx++);
+          let g = dataView.getUint8(idx++);
+          let b = dataView.getUint8(idx++);
+          tableArr.push([r, g, b]);
+          tableByte -= 3;
+        }
       }
 
       // 以下是循环
-
+      debugger
       while (idx < len) {
         let flagByte = dataView.getUint8(idx++);
         if (flagByte === 33) { // 扩展
@@ -65,7 +72,7 @@ watch(inputVal, async (newVal, oldVal) => {
                 userInputFlag: parseInt(tmp[6], 2),
                 transparentColorFlag: parseInt(tmp[7], 2)
               }
-              gce.delayTime = dataView.getUint16(idx);
+              gce.delayTime = dataView.getUint16(idx, true);
               idx += 2;
               gce.transparentColorIndex = dataView.getUint8(idx++);
               break;
@@ -79,26 +86,29 @@ watch(inputVal, async (newVal, oldVal) => {
                 flag += String.fromCharCode(dataView.getUint8(idx++));
               }
               let captcha = '';
-              while (appSize-- > 0) {
+              while (appSize-- > -1) {
                 captcha += String.fromCharCode(dataView.getUint8(idx++));
               }
+              let len = dataView.getUint8(idx++);
+              idx += len;
               break;
           }
           let EOF = dataView.getUint8(idx++);
+          console.log(EOF);
         } else if (flagByte === 44) {
           let id = {}; // 图像描述
-          id.left = dataView.getUint16(idx);
+          id.left = dataView.getUint16(idx, true);
           idx += 2;
-          id.right = dataView.getUint16(idx);
+          id.right = dataView.getUint16(idx, true);
           idx += 2;
-          id.width = dataView.getUint16(idx);
+          id.width = dataView.getUint16(idx, true);
           idx += 2;
-          id.height = dataView.getUint16(idx);
+          id.height = dataView.getUint16(idx, true);
           idx += 2;
           id.packageField = dataView.getUint8(idx++);
           // 感觉比较笨的方法 byte -> 8bit
           let tmp2 = '';
-          for (let i = 8; i > 0; i--) {
+          for (let i = 7; i >= 0; i--) {
             tmp2 += (id.packageField & 1 << i) >> i;
           }
           id.packageField = {
@@ -110,7 +120,16 @@ watch(inputVal, async (newVal, oldVal) => {
           }
           if (id.packageField.localColorTableFlag) {
             // TODO 加载局部色表
-            idx += id.packageField.localColorTableSize;
+            let tableByte = 2 << id.packageField.localColorTableSize * 3;
+            let tableArr = [];
+            while (tableByte) {
+              let r = dataView.getUint8(idx++);
+              let g = dataView.getUint8(idx++);
+              let b = dataView.getUint8(idx++);
+              tableArr.concat([r, g, b]);
+              tableByte -= 3;
+            }
+            console.log(tableArr);
           }
           // 加载数据
           let minCodeSizeLZW = dataView.getUint8(idx++);
@@ -119,7 +138,7 @@ watch(inputVal, async (newVal, oldVal) => {
           let flag = dataView.getUint8(idx++);
           let blocks = 1;
           while (flag) {
-            blocks ++;
+            blocks++;
             // TODO 解析数据块
             idx += subBlockSize;
             flag = dataView.getUint8(idx++);
