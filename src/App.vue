@@ -9,11 +9,13 @@ watch(inputVal, async (newVal, oldVal) => {
     .then(dataView => {
       let idx = 0; // 表示当前指针所在字节位置
       const len = dataView.byteLength;
+
       // 头 6byte
       let header = '';
       while (idx < 6) {
         header += String.fromCharCode(dataView.getUint8(idx++));
       }
+
       // 逻辑屏幕 7byte
       let lsd = {};
       lsd.canvasWidth = dataView.getUint16(idx, true);
@@ -34,10 +36,10 @@ watch(inputVal, async (newVal, oldVal) => {
       }
       lsd.bgColorIndex = dataView.getUint8(idx++);
       lsd.pxAspectRadio = dataView.getUint8(idx++);
+      let tableArr = [];
       if (lsd.packageField.globalColorTableFlag) {
         // TODO 加载全局色表
         let tableByte = (2 << lsd.packageField.globalColorTableSize) * 3;
-        let tableArr = [];
         while (tableByte) {
           let r = dataView.getUint8(idx++);
           let g = dataView.getUint8(idx++);
@@ -48,7 +50,6 @@ watch(inputVal, async (newVal, oldVal) => {
       }
 
       // 以下是循环
-      debugger
       while (idx < len) {
         let flagByte = dataView.getUint8(idx++);
         if (flagByte === 33) { // 扩展
@@ -63,7 +64,7 @@ watch(inputVal, async (newVal, oldVal) => {
               gce.byteSize = dataView.getUint8(idx++);
               gce.packageField = dataView.getUint8(idx++);
               let tmp = '';
-              for (let i = 8; i > 0; i--) {
+              for (let i = 7; i >= 0; i--) {
                 tmp += (gce.packageField & 1 << i) >> i;
               }
               gce.packageField = {
@@ -77,7 +78,11 @@ watch(inputVal, async (newVal, oldVal) => {
               gce.transparentColorIndex = dataView.getUint8(idx++);
               break;
             case 254: // 评论
-              let commentEOF = dataView.getUint8(idx++);
+              let commentSize = dataView.getUint8(idx++);
+              let str = '';
+              while (commentSize--) {
+                str += String.fromCharCode(dataView.getUint8(idx++))
+              }
               break;
             case 255: //应用
               let appSize = dataView.getUint8(idx++);
@@ -94,7 +99,6 @@ watch(inputVal, async (newVal, oldVal) => {
               break;
           }
           let EOF = dataView.getUint8(idx++);
-          console.log(EOF);
         } else if (flagByte === 44) {
           let id = {}; // 图像描述
           id.left = dataView.getUint16(idx, true);
@@ -129,20 +133,25 @@ watch(inputVal, async (newVal, oldVal) => {
               tableArr.concat([r, g, b]);
               tableByte -= 3;
             }
-            console.log(tableArr);
           }
           // 加载数据
           let minCodeSizeLZW = dataView.getUint8(idx++);
           let subBlockSize = dataView.getUint8(idx++);
-          idx += subBlockSize;
-          let flag = dataView.getUint8(idx++);
-          let blocks = 1;
-          while (flag) {
-            blocks++;
-            // TODO 解析数据块
-            idx += subBlockSize;
-            flag = dataView.getUint8(idx++);
+          let blocks = [];
+          let tmp = [];
+          let clear = 1 << minCodeSizeLZW;
+          let eoi = clear + 1;
+          console.log(minCodeSizeLZW);
+          while(subBlockSize) {
+            while (subBlockSize--) {
+              tmp.push(dataView.getUint8(idx++));
+            }
+            let codeTable = [];
+            let codeStream = [];
+            blocks.push(tmp);
+            subBlockSize = dataView.getUint8(idx++);
           }
+          console.log(blocks);
         }
       }
 
