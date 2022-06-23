@@ -38,7 +38,7 @@ watch(inputVal, async (newVal, oldVal) => {
       lsd.pxAspectRadio = dataView.getUint8(idx++);
       let tableArr = [];
       if (lsd.packageField.globalColorTableFlag) {
-        // TODO 加载全局色表
+        // 加载全局色表
         let tableByte = (2 << lsd.packageField.globalColorTableSize) * 3;
         while (tableByte) {
           let r = dataView.getUint8(idx++);
@@ -123,7 +123,7 @@ watch(inputVal, async (newVal, oldVal) => {
             localColorTableSize: parseInt(tmp2.slice(5, 8), 2)
           }
           if (id.packageField.localColorTableFlag) {
-            // TODO 加载局部色表
+            // 加载局部色表
             let tableByte = 2 << id.packageField.localColorTableSize * 3;
             let tableArr = [];
             while (tableByte) {
@@ -138,15 +138,35 @@ watch(inputVal, async (newVal, oldVal) => {
           let minCodeSizeLZW = dataView.getUint8(idx++);
           let subBlockSize = dataView.getUint8(idx++);
           let blocks = [];
-          let tmp = [];
           let clear = 1 << minCodeSizeLZW;
           let eoi = clear + 1;
-          console.log(minCodeSizeLZW);
-          while(subBlockSize) {
+          let tmp = '';
+          let size = minCodeSizeLZW + 1;
+          while (subBlockSize) {
+            let bx = []
             while (subBlockSize--) {
-              tmp.push(dataView.getUint8(idx++));
+              let bt = dataView.getUint8(idx++);
+              bx.push(bt);
+              for (let i = 7; i >= 0; i--) {
+                tmp += (bt & 1 << i) >> i;
+              }
             }
+            console.log(bx);
+            console.log(tmp);
+            let sbuidx = 0;
+            let code = parseInt(tmp.slice(sbuidx, sbuidx + size), 2);
             let codeTable = [];
+            while (sbuidx < tmp.length) {
+              while (code < (1 << size) - 1) {
+                code = parseInt(tmp.slice(sbuidx, sbuidx + size), 2);
+                codeTable.push(code);
+                debugger
+                sbuidx += size;
+              }
+              size++;
+            }
+
+            
             let codeStream = [];
             blocks.push(tmp);
             subBlockSize = dataView.getUint8(idx++);
