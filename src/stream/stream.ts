@@ -1,6 +1,7 @@
 interface IStream {
   readUint8(): number;
   readUint16(): number;
+  getOffset(): number;
 }
 
 export class Stream implements IStream {
@@ -22,5 +23,11 @@ export class Stream implements IStream {
     const byte2 = this.dataview.getUint16(this.offset, this.endianess);
     this.offset +=2;
     return byte2;
+  }
+  getOffset() {
+    return this.offset;
+  }
+  getStreamLen() {
+    return this.dataview.byteLength;
   }
 }

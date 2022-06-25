@@ -1,4 +1,4 @@
-export class GlobalColorTable {
+export class LocalColorTable {
   private tableCode: Array<Array<number>>;
   constructor(stream, tableSize: number) {
     this.tableCode = [];

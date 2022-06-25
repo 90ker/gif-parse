@@ -1,14 +1,24 @@
 <script setup>
 import { ref, watch } from 'vue'
-import { Stream } from './stream'
-import { Header } from './structure/header'
-import { LogicScreen } from './structure/logicScreen'
-import { PlainText } from './extension/plainText'
-import { GraphControl } from './extension/graphControl'
-import { Comment } from './extension/comment'
+import { Stream } from './stream/stream'
+import { Header } from './stream/structure/header'
+import { LogicScreen } from './stream/structure/logicScreen'
+import { GlobalColorTable } from './stream/structure/globalColor'
+import { PlainText } from './stream/extension/plainText'
+import { GraphControl } from './stream/extension/graphControl'
+import { Application } from './stream/extension/application'
+import { Comment } from './stream/extension/comment'
 
 
 let inputVal = ref('http://cloudstorage.ihubin.com/blog/audio-video/blog-17/rainbow.gif');
+let header = ref('');
+let logicScreen = ref({});
+let globalColorTable = ref(null);
+let graph = ref({});
+let localColorTable = ref(null);
+let decodeData = ref([]);
+
+
 //https://segmentfault.com/a/1190000022866045
 watch(inputVal, async (newVal, oldVal) => {
   fetch(newVal)
@@ -16,17 +26,15 @@ watch(inputVal, async (newVal, oldVal) => {
     .then(buffer => new DataView(buffer))
     .then(dataView => {
       const stream = new Stream(dataView, true);
-      const header = new Header(stream);
-      const logicScreen = new LogicScreen(stream);
-      
-      let globalColorTable = null;
+      header = new Header(stream);
+      logicScreen = new LogicScreen(stream);
+
       if (logicScreen.packageField.globalColorTableFlag) {
-        let tableByte = (2 << logicScreen.packageField.globalColorTableSize) * 3;
-        globalColorTable = new GlobalColorTable(stream, tableByte);
+        globalColorTable = new GlobalColorTable(stream, (2 << logicScreen.packageField.globalColorTableSize) * 3);
       }
 
       // 以下是循环
-      while (idx < len) {
+      while (stream.getOffset() < stream.getStreamLen()) {
         let flagByte = stream.readUint8();
         if (flagByte === 33) { // 扩展
           let type = stream.readUint8();
@@ -45,79 +53,13 @@ watch(inputVal, async (newVal, oldVal) => {
               break;
           }
         } else if (flagByte === 44) {
-          let id = {}; // 图像描述
-          id.left = dataView.getUint16(idx, true);
-          idx += 2;
-          id.right = dataView.getUint16(idx, true);
-          idx += 2;
-          id.width = dataView.getUint16(idx, true);
-          idx += 2;
-          id.height = dataView.getUint16(idx, true);
-          idx += 2;
-          id.packageField = dataView.getUint8(idx++);
-          // 感觉比较笨的方法 byte -> 8bit
-          let tmp2 = '';
-          for (let i = 7; i >= 0; i--) {
-            tmp2 += (id.packageField & 1 << i) >> i;
+          graph = new Graph(stream);
+          if (graph.packageField.localColorTableFlag) {
+            localColorTable = new GlobalColorTable(stream, (2 << graph.packageField.localColorTableSize) * 3);
           }
-          id.packageField = {
-            localColorTableFlag: parseInt(tmp2[0], 2),
-            interlaceFlag: parseInt(tmp2[1], 2),
-            sortFlag: parseInt(tmp2[2], 2),
-            unUse: parseInt(tmp2.slice(3, 5), 2),
-            localColorTableSize: parseInt(tmp2.slice(5, 8), 2)
-          }
-          if (id.packageField.localColorTableFlag) {
-            // 加载局部色表
-            let tableByte = (2 << id.packageField.localColorTableSize) * 3;
-            let tableArr = [];
-            while (tableByte) {
-              let r = dataView.getUint8(idx++);
-              let g = dataView.getUint8(idx++);
-              let b = dataView.getUint8(idx++);
-              tableArr.concat([r, g, b]);
-              tableByte -= 3;
-            }
-          }
-          // 加载数据
-          let minCodeSizeLZW = dataView.getUint8(idx++);
-          let subBlockSize = dataView.getUint8(idx++);
-          let blocks = [];
-          let clear = 1 << minCodeSizeLZW;
-          let eoi = clear + 1;
-          let tmp = [];
-          let size = minCodeSizeLZW + 1;
-          while (subBlockSize) {
-            while (subBlockSize--) {
-              let theByte = dataView.getUint8(idx++);
-              let bitIdx = 0;
-
-              for (let i = 7; i >= 0; i--) {
-                xx.unshift((bt & 1 << i) >> i);
-              }
-              tmp = tmp.concat(xx); 
-            }
-            let sbuidx = 0;
-            let code = parseInt(tmp.slice(sbuidx, sbuidx + size).join(''), 2);
-            let codeStream = [];
-            
-            while (sbuidx < tmp.length) {
-              while (code < (1 << size) - 1) {
-                code = parseInt(tmp.slice(sbuidx, sbuidx + size).join(''), 2);
-                codeStream.push(code);
-                sbuidx += size;
-              }
-              size++;
-            }
-            console.log(codeStream);
-            
-            let codeTable = [];
-            blocks.push(tmp);
-            subBlockSize = dataView.getUint8(idx++);
-          }
+          new LZWDecoder(stream);
         }
       }
-
     })
 }, { immediate: true })
 </script>
@@ -126,15 +68,12 @@ watch(inputVal, async (newVal, oldVal) => {
   <img :src="inputVal" alt="">
   <div></div>
   <input type="text" v-model="inputVal" />
+  <div>{{ header }}</div>
+  <div>{{ logicScreen }}</div>
+
+  <div v-for="(rgb, key) in globalColorTable" :style="{ backgroundColor: rgb.join(',') }"
+    style="width: 30px; height: 30px;"></div>
 </template>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
 </style>
