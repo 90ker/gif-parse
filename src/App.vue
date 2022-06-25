@@ -1,5 +1,13 @@
 <script setup>
 import { ref, watch } from 'vue'
+import { Stream } from './stream'
+import { Header } from './structure/header'
+import { LogicScreen } from './structure/logicScreen'
+import { PlainText } from './extension/plainText'
+import { GraphControl } from './extension/graphControl'
+import { Comment } from './extension/comment'
+
+
 let inputVal = ref('http://cloudstorage.ihubin.com/blog/audio-video/blog-17/rainbow.gif');
 //https://segmentfault.com/a/1190000022866045
 watch(inputVal, async (newVal, oldVal) => {
@@ -7,98 +15,35 @@ watch(inputVal, async (newVal, oldVal) => {
     .then(res => res.arrayBuffer())
     .then(buffer => new DataView(buffer))
     .then(dataView => {
-      let idx = 0; // 表示当前指针所在字节位置
-      const len = dataView.byteLength;
-
-      // 头 6byte
-      let header = '';
-      while (idx < 6) {
-        header += String.fromCharCode(dataView.getUint8(idx++));
-      }
-
-      // 逻辑屏幕 7byte
-      let lsd = {};
-      lsd.canvasWidth = dataView.getUint16(idx, true);
-      idx += 2;
-      lsd.canvasHeight = dataView.getUint16(idx, true);
-      idx += 2;
-      lsd.packageField = dataView.getUint8(idx++);
-      // 感觉比较笨的方法 byte -> 8bit
-      let tmp = '';
-      for (let i = 7; i >= 0; i--) {
-        tmp += (lsd.packageField & 1 << i) >> i;
-      }
-      lsd.packageField = {
-        globalColorTableFlag: parseInt(tmp[0], 2),
-        colorResolution: parseInt(tmp.slice(1, 4), 2),
-        sortFlag: parseInt(tmp[4], 2),
-        globalColorTableSize: parseInt(tmp.slice(5, 8), 2)
-      }
-      lsd.bgColorIndex = dataView.getUint8(idx++);
-      lsd.pxAspectRadio = dataView.getUint8(idx++);
-      let tableArr = [];
-      if (lsd.packageField.globalColorTableFlag) {
-        // 加载全局色表
-        let tableByte = (2 << lsd.packageField.globalColorTableSize) * 3;
-        while (tableByte) {
-          let r = dataView.getUint8(idx++);
-          let g = dataView.getUint8(idx++);
-          let b = dataView.getUint8(idx++);
-          tableArr.push([r, g, b]);
-          tableByte -= 3;
-        }
+      const stream = new Stream(dataView, true);
+      const header = new Header(stream);
+      const logicScreen = new LogicScreen(stream);
+      
+      let globalColorTable = null;
+      if (logicScreen.packageField.globalColorTableFlag) {
+        let tableByte = (2 << logicScreen.packageField.globalColorTableSize) * 3;
+        globalColorTable = new GlobalColorTable(stream, tableByte);
       }
 
       // 以下是循环
       while (idx < len) {
-        let flagByte = dataView.getUint8(idx++);
+        let flagByte = stream.readUint8();
         if (flagByte === 33) { // 扩展
-          let type = dataView.getUint8(idx++);
+          let type = stream.readUint8();
           switch (type) {
             case 1: //纯文本
-              let textSize = dataView.getUint8(idx++);
-              idx += textSize;
+              const plainText = new PlainText(stream);
               break;
             case 249: // 图像控制
-              let gce = {};
-              gce.byteSize = dataView.getUint8(idx++);
-              gce.packageField = dataView.getUint8(idx++);
-              let tmp = '';
-              for (let i = 7; i >= 0; i--) {
-                tmp += (gce.packageField & 1 << i) >> i;
-              }
-              gce.packageField = {
-                unUse: parseInt(tmp.slice(0, 3), 2),
-                disposalMethod: parseInt(tmp.slice(3, 6), 2),
-                userInputFlag: parseInt(tmp[6], 2),
-                transparentColorFlag: parseInt(tmp[7], 2)
-              }
-              gce.delayTime = dataView.getUint16(idx, true);
-              idx += 2;
-              gce.transparentColorIndex = dataView.getUint8(idx++);
+              const graphControl = new GraphControl(stream);
               break;
             case 254: // 评论
-              let commentSize = dataView.getUint8(idx++);
-              let str = '';
-              while (commentSize--) {
-                str += String.fromCharCode(dataView.getUint8(idx++))
-              }
+              const comment = new Comment(stream);
               break;
             case 255: //应用
-              let appSize = dataView.getUint8(idx++);
-              let flag = '';
-              while (appSize-- > 3) {
-                flag += String.fromCharCode(dataView.getUint8(idx++));
-              }
-              let captcha = '';
-              while (appSize-- > -1) {
-                captcha += String.fromCharCode(dataView.getUint8(idx++));
-              }
-              let len = dataView.getUint8(idx++);
-              idx += len;
+              const application = new Application(stream);
               break;
           }
-          let EOF = dataView.getUint8(idx++);
         } else if (flagByte === 44) {
           let id = {}; // 图像描述
           id.left = dataView.getUint16(idx, true);
@@ -124,7 +69,7 @@ watch(inputVal, async (newVal, oldVal) => {
           }
           if (id.packageField.localColorTableFlag) {
             // 加载局部色表
-            let tableByte = 2 << id.packageField.localColorTableSize * 3;
+            let tableByte = (2 << id.packageField.localColorTableSize) * 3;
             let tableArr = [];
             while (tableByte) {
               let r = dataView.getUint8(idx++);
@@ -140,38 +85,36 @@ watch(inputVal, async (newVal, oldVal) => {
           let blocks = [];
           let clear = 1 << minCodeSizeLZW;
           let eoi = clear + 1;
-          let tmp = '';
+          let tmp = [];
           let size = minCodeSizeLZW + 1;
           while (subBlockSize) {
-            let bx = []
             while (subBlockSize--) {
-              let bt = dataView.getUint8(idx++);
-              bx.push(bt);
+              let theByte = dataView.getUint8(idx++);
+              let bitIdx = 0;
+
               for (let i = 7; i >= 0; i--) {
-                tmp += (bt & 1 << i) >> i;
+                xx.unshift((bt & 1 << i) >> i);
               }
+              tmp = tmp.concat(xx); 
             }
-            console.log(bx);
-            console.log(tmp);
             let sbuidx = 0;
-            let code = parseInt(tmp.slice(sbuidx, sbuidx + size), 2);
-            let codeTable = [];
+            let code = parseInt(tmp.slice(sbuidx, sbuidx + size).join(''), 2);
+            let codeStream = [];
+            
             while (sbuidx < tmp.length) {
               while (code < (1 << size) - 1) {
-                code = parseInt(tmp.slice(sbuidx, sbuidx + size), 2);
-                codeTable.push(code);
-                debugger
+                code = parseInt(tmp.slice(sbuidx, sbuidx + size).join(''), 2);
+                codeStream.push(code);
                 sbuidx += size;
               }
               size++;
             }
-
+            console.log(codeStream);
             
-            let codeStream = [];
+            let codeTable = [];
             blocks.push(tmp);
             subBlockSize = dataView.getUint8(idx++);
           }
-          console.log(blocks);
         }
       }
 
