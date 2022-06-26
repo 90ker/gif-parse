@@ -1,33 +1,30 @@
 interface IStream {
   readUint8(): number;
   readUint16(): number;
-  getOffset(): number;
+  slice(offset: number, length: number): Uint8Array;
 }
 
 export class Stream implements IStream {
-  private dataview: DataView;
-  private offset: number;
-  private endianess: boolean; // 位读取顺序，gif为true: 低位到高位，与人类阅读顺序相反
+  dataView: DataView;
+  offset: number;
+  endianess: boolean; // 位读取顺序，gif为true: 低位到高位，与人类阅读顺序相反
   constructor(dataView: DataView, endianess: boolean) {
-    this.dataview = dataView;
+    this.dataView = dataView;
     this.offset = 0;
     this.endianess = endianess;
   }
 
   readUint8() {
-    const byte = this.dataview.getUint8(this.offset);
-    this.offset ++;
+    const byte = this.dataView.getUint8(this.offset);
+    this.offset++;
     return byte;
   }
   readUint16() {
-    const byte2 = this.dataview.getUint16(this.offset, this.endianess);
-    this.offset +=2;
+    const byte2 = this.dataView.getUint16(this.offset, this.endianess);
+    this.offset += 2;
     return byte2;
   }
-  getOffset() {
-    return this.offset;
-  }
-  getStreamLen() {
-    return this.dataview.byteLength;
+  slice(offset: number, length: number): Uint8Array {
+    return new Uint8Array(this.dataView.buffer, offset, length);
   }
 }

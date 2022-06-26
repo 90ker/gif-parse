@@ -1,5 +1,5 @@
 export class GlobalColorTable {
-  private tableCode: Array<Array<number>>;
+  tableCode?: Array<Array<number>>;
   constructor(stream, tableSize: number) {
     this.tableCode = [];
     while (tableSize) {

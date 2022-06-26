@@ -2,7 +2,7 @@ import { Stream } from "../stream";
 import { EOF } from './index'
 
 export class PlainText extends EOF {
-  private dataSize: number;
+   dataSize: number;
   constructor(stream: Stream) {
     super();
     this.dataSize = stream.readUint8();

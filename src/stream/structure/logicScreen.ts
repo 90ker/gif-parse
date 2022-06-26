@@ -9,11 +9,11 @@ interface ILogicSreenPackageField {
 }
 
 export class LogicScreen {
-  private canvasWidth: number;
-  private canvasHeight: number;
-  private packageField: ILogicSreenPackageField;
-  private bgColorIndex: number;
-  private pxAspectRadio: number;
+   canvasWidth: number;
+   canvasHeight: number;
+   packageField: ILogicSreenPackageField;
+   bgColorIndex: number;
+   pxAspectRadio: number;
 
   constructor(stream: Stream) {
     this.canvasWidth = stream.readUint16();

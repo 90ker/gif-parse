@@ -10,10 +10,10 @@ interface IGraphControlPackageField {
 }
 
 export class GraphControl extends EOF {
-  private dataSize: number;
-  private packageField: IGraphControlPackageField;
-  private delayTime: number;
-  private transparentColorIndex: number;
+   dataSize: number;
+   packageField: IGraphControlPackageField;
+   delayTime: number;
+   transparentColorIndex: number;
 
   
   constructor(stream: Stream) {

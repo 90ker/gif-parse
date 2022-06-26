@@ -2,8 +2,8 @@ import { Stream } from "../stream";
 import { EOF } from './index'
 
 export class Application extends EOF {
-  private dataSize: number;
-  private content: string;
+   dataSize: number;
+   content: string;
   constructor(stream: Stream) {
     super();
     this.dataSize = stream.readUint8();

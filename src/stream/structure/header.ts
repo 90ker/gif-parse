@@ -1,11 +1,12 @@
 import { Stream } from "../stream";
 
 export class Header {
-  private title: string;
+   title: string;
 
   constructor(stream: Stream) {
+    this.title = '';
     for (let i = 0; i < 6; i++) {
-      this.title +=  String.fromCharCode(stream.readUint8());
+      this.title += String.fromCharCode(stream.readUint8());
     }
   }
 }

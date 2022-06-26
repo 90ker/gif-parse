@@ -10,11 +10,11 @@ interface IGraphPackageField {
 }
 
 export class Graph {
-  private left: number;
-  private right: number;
-  private width: number;
-  private height: number;
-  private packageField: IGraphPackageField;
+   left: number;
+   right: number;
+   width: number;
+   height: number;
+   packageField: IGraphPackageField;
 
   constructor(stream: Stream) {
     this.left = stream.readUint16();
