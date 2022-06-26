@@ -1,5 +1,5 @@
 import { Stream } from "../stream";
-import { EOF } from './index'
+import { EOF } from '../eof'
 
 export class Application extends EOF {
    dataSize: number;

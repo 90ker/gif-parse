@@ -1,5 +1,5 @@
 import { Stream } from "../stream";
-import { EOF } from './index'
+import { EOF } from '../eof'
 
 export class PlainText extends EOF {
    dataSize: number;
@@ -10,5 +10,6 @@ export class PlainText extends EOF {
       stream.readUint8();
       this.dataSize --;
     }
+    this.emitEOF(stream);
   }
 }

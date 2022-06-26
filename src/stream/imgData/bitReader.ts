@@ -1,6 +1,7 @@
 interface IBitReader {
   readBits(len: number): number; //在byte之间获取bit
-  setBytes(bytes: Uint8Array): void; //在byte之间获取bit
+  setBytes(bytes: Uint8Array): void; // 放入bytes
+  hasBits(size: number): boolean;
 }
 
 
@@ -10,6 +11,28 @@ export class BitReader implements IBitReader {
   bytes: Uint8Array;
   constructor() {
   }
+  
+  setBytes(bytes: Uint8Array) { 
+    //在放入新的bytes之前，检查上一个是否用完
+    if (this.hasBits(1)) {
+      const restByte = this.bytes.byteLength - this.byteOffset
+      const tmp = new Uint8Array(restByte + bytes.byteLength);
+      tmp.set(this.bytes.slice(this.byteOffset));
+      tmp.set(bytes, restByte);
+      this.bytes = tmp;
+      this.byteOffset = 0;
+    } else {
+      this.bitOffset = 0;
+      this.byteOffset = 0;
+      this.bytes = bytes;
+    }
+  }
+  
+  hasBits(size: number): boolean {
+    const restBits = 8 * (this.bytes.byteLength - this.byteOffset) + 8 - this.bitOffset;
+    return restBits > size;
+  }
+
 
   readBits(len: number): number { // 这里的逻辑是以byte为界限
     let result = 0;
@@ -31,9 +54,5 @@ export class BitReader implements IBitReader {
     }
     return result;
   }
-  setBytes(bytes: Uint8Array) {
-    this.bitOffset = 0;
-    this.byteOffset = 0;
-    this.bytes = bytes;
-  }
+
 }

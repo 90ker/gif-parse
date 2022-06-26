@@ -1,6 +1,6 @@
 import { Stream } from "../stream";
 import { byte2bitStr } from "../util";
-import { EOF } from './index'
+import { EOF } from '../eof'
 
 interface IGraphControlPackageField {
   unUse: number;
@@ -29,5 +29,6 @@ export class GraphControl extends EOF {
     }
     this.delayTime = stream.readUint16();
     this.transparentColorIndex = stream.readUint8();
+    this.emitEOF(stream);
   }
 }
