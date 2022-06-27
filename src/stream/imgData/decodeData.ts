@@ -8,21 +8,22 @@ export class DecodeData extends EOF {
    data: Array<number>;
   constructor(stream: Stream) {
     super();
-    debugger
     this.minCodeSizeLZW = stream.readUint8();
     let subBlockSize = stream.readUint8();
     let blocks: Array<Uint8Array> = [];
+    // 1. stream -> blocks
     while (subBlockSize) {
-      blocks.concat(stream.slice(stream.offset, subBlockSize));
+      blocks.push(stream.slice(stream.offset, subBlockSize));
+      stream.setOffset(stream.offset + subBlockSize);
       subBlockSize = stream.readUint8();
     }
+    // 2. blocks -> codeStream -> indexStream
     const bitReader = new BitReader(); // bytes -> codeStream
-    const lzwDecoder = new LZWDecoder(); // codeStream -> colorIndex
     let codeStream: Array<number> = [];
     let codeTable: Array<Array<number>> = [];
     const indexStream: Array<number> = [];
+    const clearCode = 1 << this.minCodeSizeLZW;
     const EOICode = (1 << this.minCodeSizeLZW) + 1;
-    const clearCode = (1 << this.minCodeSizeLZW) + 2;
     let size = this.minCodeSizeLZW + 1;
     // 单张图片的解析
     blocks.forEach(block => { // 本来可以通过将block都set到一个Unit8Array里去，但是会占用更多内存

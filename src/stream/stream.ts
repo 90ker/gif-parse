@@ -2,6 +2,7 @@ interface IStream {
   readUint8(): number;
   readUint16(): number;
   slice(offset: number, length: number): Uint8Array;
+  setOffset(offset: number): void;
 }
 
 export class Stream implements IStream {
@@ -13,7 +14,6 @@ export class Stream implements IStream {
     this.offset = 0;
     this.endianess = endianess;
   }
-
   readUint8() {
     const byte = this.dataView.getUint8(this.offset);
     this.offset++;
@@ -26,5 +26,8 @@ export class Stream implements IStream {
   }
   slice(offset: number, length: number): Uint8Array {
     return new Uint8Array(this.dataView.buffer, offset, length);
+  }
+  setOffset(offset: number): void {
+    this.offset = offset;
   }
 }
