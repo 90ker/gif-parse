@@ -36,8 +36,7 @@ export class DecodeData extends EOF {
         if (code === maxCode) {
           size ++;
         } else if (code === EOICode) { // 每张图片一个，但不太明白和EOF的区别
-          codeStream.push(code);
-          break;
+          
         } else if (code === clearCode) { // 一般在每个subBlock的开头，用来初始化
           codeStream = [];
           codeTable = [];
@@ -46,7 +45,6 @@ export class DecodeData extends EOF {
           }
           initedCodeStream = false;
         } else if (!initedCodeStream) {
-          codeStream.push(code);
           indexStream.push(...codeTable[code]);
           initedCodeStream = true;
         } else { // 处理code
@@ -69,15 +67,13 @@ export class DecodeData extends EOF {
             y = codeTable[prevCode][0];
             indexStream.push(...codeTable[prevCode], y);
           }
+
           if(codeTable.length - 1 < 0xfff) { // codeTable的index就是codeStream的值
             // 每回合最后生成一个新的字典kv, 这里的y含义就是当前 code 对应IndexStream的第一个
             codeTable.push([...codeTable[prevCode], y]);
           }
-          
-          codeStream.push(code);
-
         }
-        
+        codeStream.push(code);
       }
 
     })
