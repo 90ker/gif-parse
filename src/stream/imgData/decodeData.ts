@@ -25,10 +25,11 @@ export class DecodeData extends EOF {
     const clearCode = 1 << this.minCodeSizeLZW;
     const EOICode = (1 << this.minCodeSizeLZW) + 1;
     let size = this.minCodeSizeLZW + 1;
+    let initedCodeStream = false;
     // 单张图片的解析
     blocks.forEach(block => { // 本来可以通过将block都set到一个Unit8Array里去，但是会占用更多内存
-      debugger
       bitReader.setBytes(block);
+      debugger
       let maxCode = (1 << size) - 1;
       while(bitReader.hasBits(size)) {
         let code = bitReader.readBits(size);
@@ -40,6 +41,14 @@ export class DecodeData extends EOF {
         } else if (code === clearCode) { // 一般在每个subBlock的开头，用来初始化
           codeStream = [];
           codeTable = [];
+          for(let i = 0; i <= EOICode; i++) {
+            codeTable[i] = i < clearCode ? [i] : [];
+          }
+          initedCodeStream = false;
+        } else if (!initedCodeStream) {
+          codeStream.push(code);
+          indexStream.push(...codeTable[code]);
+          initedCodeStream = true;
         } else { // 处理code
           let prevCode = codeStream[codeStream.length - 1];
           let y = 0;

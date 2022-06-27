@@ -16,7 +16,6 @@ export class BitReader implements IBitReader {
   }
   
   setBytes(bytes: Uint8Array) { 
-    debugger
     //在放入新的bytes之前，检查上一个是否用完
     if (this.hasBits(1)) {
       const restByte = this.bytes.byteLength - this.byteOffset
