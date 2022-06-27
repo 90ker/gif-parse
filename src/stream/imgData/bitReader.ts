@@ -45,6 +45,7 @@ export class BitReader implements IBitReader {
      * 经过多次循环，跨byte去满足x >= len
      */
     while (gotBits < len) {
+      // debugger
       const perBits = Math.min(8 - this.bitOffset, len - gotBits); // 单次获取多少个bit，受限于剩余bit数
       const mask = 0xff >> (8 - perBits) << this.bitOffset; // 通过mask取到对应的位置
       result += (mask & this.bytes[this.byteOffset]) >> this.bitOffset << gotBits; // 在下一个byte里补齐位数 tips: >> 优先级大于 &

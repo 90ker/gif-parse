@@ -29,14 +29,12 @@ export class DecodeData extends EOF {
     // 单张图片的解析
     blocks.forEach(block => { // 本来可以通过将block都set到一个Unit8Array里去，但是会占用更多内存
       bitReader.setBytes(block);
-      debugger
       let maxCode = (1 << size) - 1;
       while(bitReader.hasBits(size)) {
         let code = bitReader.readBits(size);
-        if (code === maxCode) {
-          size ++;
-        } else if (code === EOICode) { // 每张图片一个，但不太明白和EOF的区别
-          
+        if (code === EOICode) { // 每张图片一个，但不太明白和EOF的区别
+          codeStream.push(code);
+          break;
         } else if (code === clearCode) { // 一般在每个subBlock的开头，用来初始化
           codeStream = [];
           codeTable = [];
@@ -71,12 +69,15 @@ export class DecodeData extends EOF {
           if(codeTable.length - 1 < 0xfff) { // codeTable的index就是codeStream的值
             // 每回合最后生成一个新的字典kv, 这里的y含义就是当前 code 对应IndexStream的第一个
             codeTable.push([...codeTable[prevCode], y]);
+            // if (code === maxCode && code < 0xfff) {  code 并不一定是线性增长的，但codetable是
+            if(codeTable.length - 1 === maxCode && codeTable.length - 1 < 0xfff) {
+              size ++;
+              maxCode = (1 << size) - 1;
+            }
           }
         }
         codeStream.push(code);
       }
-
     })
-    this.emitEOF(stream);
   }
 }
