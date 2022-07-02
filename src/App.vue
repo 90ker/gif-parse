@@ -40,14 +40,29 @@ watch(inputVal, async (newVal, oldVal) => {
   <div>{{ parseData.header }}</div>
   <div>{{ parseData.logicScreen }}</div>
 
-  <div v-for="(rgb, key) in parseData.globalColorTable.tableCode" :key="key" :style="{ backgroundColor: `rgb(${rgb.join(',')})` }"
-    style="display: inline-block; width: 30px; height: 30px;">
+  <div v-for="(rgb, key) in parseData.globalColorTable.tableCode" :key="key"
+    :style="{ backgroundColor: `rgb(${rgb.join(',')})` }" style="display: inline-block; width: 30px; height: 30px;">
   </div>
 
-  <div v-for="(p, key) in parseData.plainTexts" :key="key">{{ p }}</div>
-  <div v-for="(g, key) in parseData.graphControls" :key="key">{{ g }}</div>
-  <div v-for="(c, key) in parseData.comments" :key="key">{{ c }}</div>
-  <div v-for="(a, key) in parseData.applications" :key="key">{{ a }}</div>
+  <div v-for="(img, key) in parseData.imgs">
+    <h1>{{key}}</h1>
+    <div v-if="img.plainTexts.length">
+      <h2>plainText</h2>
+      <p v-for="(p, key) in img.plainTexts" :key="key">{{ p }}</p>
+    </div>
+    <div v-if="img.graphControls.length">
+      <h2>graphControl</h2>
+      <p v-for="(g, key) in img.graphControls" :key="key">{{ g }}</p>
+    </div>
+    <div v-if="img.comments.length">
+      <h2>comment</h2>
+      <p v-for="(c, key) in img.comments" :key="key">{{ c }}</p>
+    </div>
+    <div v-if="img.applications.length">
+      <h2>application</h2>
+      <p v-for="(a, key) in img.applications" :key="key">{{ a }}</p>
+    </div>
+  </div>
 </template>
 
 <style>

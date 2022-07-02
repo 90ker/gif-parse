@@ -10,6 +10,16 @@ import { Comment } from './stream/extension/comment'
 import { Graph } from './stream/structure/graph'
 import { DecodeData } from './stream/imgData/decodeData'
 
+interface Img {
+  graph: Graph;
+  localColorTable: LocalColorTable | [];
+  plainTexts: Array<PlainText>;
+  graphControls: Array<GraphControl>;
+  comments: Array<Comment>;
+  applications: Array<Application>;
+  decodeData: object;
+}
+
 export class ParseData {
   stream: Stream;
   header: Header;
@@ -22,6 +32,7 @@ export class ParseData {
   comments: Array<Comment>;
   applications: Array<Application>;
   decodeData: object;
+  imgs: Array<object>;
 
   constructor(dataView) {
     this.stream = new Stream(dataView, true);
@@ -37,32 +48,48 @@ export class ParseData {
       this.globalColorTable = [];
     }
 
+    this.imgs = [];
     // 以下是循环
     while (this.stream.offset < this.stream.dataView.byteLength) {
+      let img: Img = {
+        graph: {},
+        localColorTable: {},
+        plainTexts: [],
+        graphControls: [],
+        comments: [],
+        applications: [],
+        decodeData: {}
+      };
       let flagByte = this.stream.readUint8();
       if (flagByte === 33) { // 扩展
         let type = this.stream.readUint8();
         switch (type) {
           case 1: //纯文本
-            this.plainTexts.push(new PlainText(this.stream));
+            img.plainTexts.push(new PlainText(this.stream));
             break;
           case 249: // 图像控制
-            this.graphControls.push(new GraphControl(this.stream));
+            img.graphControls.push(new GraphControl(this.stream));
             break;
           case 254: // 评论
-            this.comments.push(new Comment(this.stream));
+            img.comments.push(new Comment(this.stream));
             break;
           case 255: //应用
-            this.applications.push(new Application(this.stream));
+            img.applications.push(new Application(this.stream));
             break;
         }
       } else if (flagByte === 44) {
-        this.graph = new Graph(this.stream);
-        if (this.graph.packageField.localColorTableFlag) {
-          this.localColorTable = new LocalColorTable(this.stream, (2 << this.graph.packageField.localColorTableSize) * 3);
+        img.graph = new Graph(this.stream);
+        if (img.graph.packageField.localColorTableFlag) {
+          img.localColorTable = new LocalColorTable(this.stream, (2 << img.graph.packageField.localColorTableSize) * 3);
         }
-        this.decodeData = new DecodeData(this.stream);
+        img.decodeData = new DecodeData(this.stream);
+
       }
+      this.imgs.push(img);
     }
   }
+}
+
+function dataToColor(data) {
+  
 }

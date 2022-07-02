@@ -7,6 +7,7 @@ export class Comment extends EOF {
   constructor(stream: Stream) {
     super();
     this.dataSize = stream.readUint8();
+    this.content = '';
     while (this.dataSize) {
       this.content += String.fromCharCode(stream.readUint8());
       this.dataSize --;
