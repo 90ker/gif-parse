@@ -1,14 +1,14 @@
-import { Stream } from './stream/stream'
-import { Header } from './stream/structure/header'
-import { LogicScreen } from './stream/structure/logicScreen'
-import { GlobalColorTable } from './stream/structure/globalColor'
-import { LocalColorTable } from './stream/structure/localColor'
+import { Stream } from './entity/stream'
+import { Header } from './entity/global/header'
+import { LogicScreen } from './entity/global/logicScreen'
+import { GlobalColorTable } from './entity/global/globalColor'
+import { LocalColorTable } from './entity/local/img/localColor'
 import { PlainText } from './stream/extension/plainText'
 import { GraphControl } from './stream/extension/graphControl'
 import { Application } from './stream/extension/application'
 import { Comment } from './stream/extension/comment'
-import { Graph } from './stream/structure/graph'
-import { DecodeData } from './stream/imgData/decodeData'
+import { Graph } from './entity/local/img/graph'
+import { DecodeData } from './utils/decodeData'
 
 interface Img {
   graph: Graph;
@@ -83,13 +83,9 @@ export class ParseData {
           img.localColorTable = new LocalColorTable(this.stream, (2 << img.graph.packageField.localColorTableSize) * 3);
         }
         img.decodeData = new DecodeData(this.stream);
-
+        img.frame = img.decodeData.createImg(this.logicScreen.canvasWidth, this.logicScreen.canvasHeight, this.globalColorTable);
       }
       this.imgs.push(img);
     }
   }
-}
-
-function dataToColor(data) {
-  
 }
