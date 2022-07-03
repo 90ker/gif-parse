@@ -1,4 +1,4 @@
-import { Stream } from '../stream';
+import { Stream } from '../common/stream';
 import { byte2bitStr } from '../../utils/util'
 
 interface ILogicSreenPackageField {

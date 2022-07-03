@@ -1,4 +1,4 @@
-import { Stream } from "../stream";
+import { Stream } from "../common/stream";
 
 interface IEOF {
   emitEOF(stream: Stream): void;

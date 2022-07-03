@@ -1,4 +1,4 @@
-import { Stream } from "../../stream";
+import { Stream } from "../../common/stream";
 import { EOF } from '../../global/EOF'
 
 export class Comment extends EOF {

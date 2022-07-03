@@ -1,4 +1,4 @@
-import { Stream } from "../entity/stream";
+import { Stream } from "../entity/common/stream";
 import { BitReader } from "./bitReader";
 import { EOF } from "../entity/global/EOF";
 
