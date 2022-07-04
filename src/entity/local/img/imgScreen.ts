@@ -9,7 +9,7 @@ interface IGraphPackageField {
   localColorTableSize: number;
 }
 
-export class Graph {
+export class ImgScreen {
    left: number;
    right: number;
    width: number;
