@@ -17,7 +17,6 @@ const props = defineProps({
 
 function renderColorTable() {
   const canvas = document.querySelector('#globalColorTable');
-  debugger
   canvas.width = props.canvasWidth;
   canvas.height = 200;
   const content = canvas.getContext('2d');
